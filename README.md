@@ -11,8 +11,6 @@ Public Score: 0.79545
 - 快速验证：使用仓库提供的固定 DINOv2 feature cache，直接复现最佳提交。
 
 - 完整 Pipeline：从原始图片构造数据，按原仓库网格搜索流程重新训练，按 val topk_f1 选择 rank1。
-```
-
 ## 1. 仓库结构
 
 ```text
