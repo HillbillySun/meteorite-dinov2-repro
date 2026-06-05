@@ -24,9 +24,6 @@ data/
   README.md
   splits/hardval_ablation/val_mild_400g.csv
 
-docs/
-  补充实验记录
-
 outputs/best_submission/
   topk_90.csv
   test_probabilities.csv
