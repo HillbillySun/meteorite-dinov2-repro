@@ -141,7 +141,7 @@ train_labels.csv 和 sample_submission.csv 中的 id 必须与图片文件名一
 
 ## 7. 构造训练数据
 
-助教从原始数据开始复现时，需要先构造本项目使用的 style-v3 relaxed 数据。
+若要完整复现pipeline，须从原始数据开始复现，需要先构造本项目使用的 style-v3 relaxed 数据。
 
 运行：
 
