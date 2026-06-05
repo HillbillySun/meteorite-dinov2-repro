@@ -51,17 +51,6 @@ requirements.txt
 setup_gpu_env.sh
 ```
 
-以下内容不会提交到 Git，需要用户自行准备或运行脚本生成：
-
-```text
-data/train_images/                            # 官方训练图片，自行放置
-data/test_images/                             # 官方测试图片，自行放置
-data/zero_raw_v1/                             # 完整 Pipeline 自动生成
-runs/                                         # 训练、网格搜索和复现输出
-hf_*/                                         # 本地 Hugging Face 打包目录
-.venv/                                        # 本地 Python 环境
-```
-
 ## 2. 环境配置
 
 推荐使用 Python 3.10 或更高版本。
@@ -98,8 +87,8 @@ onnxruntime providers: ['CUDAExecutionProvider', ...]
 ```text
 libcudnn.so.9: cannot open shared object file
 ```
-
-## 3. 快速验证：固定 cache 复现最佳提交
+## 3. 快速验证
+### 3.1 固定 cache 复现最佳提交
 
 该路径不需要原始图片，也不需要先构建数据。本仓库包含固定的 DINOv2 feature cache：
 
@@ -129,7 +118,7 @@ cmp \
 
 如果没有输出，说明复现结果与线上提交文件完全一致。
 
-## 4. Hugging Face 直调模型验证
+### 3.2 Hugging Face 直调模型验证
 
 完整模型已上传到 Hugging Face，仓库地址：
 
@@ -161,7 +150,8 @@ runs/hf_direct_top90/topk_90.csv
 
 这说明生成的 `topk_90.csv` 与线上提交文件完全一致。
 
-## 5. 准备原始数据
+## 4. 完整pipeline复现
+### 4.1 准备原始数据
 
 如需从零开始运行完整 Pipeline，请将课程提供的数据放到 `data/` 下：
 
@@ -187,7 +177,7 @@ train_labels.csv 和 sample_submission.csv 中的 id 必须与图片文件名一
 
 其中 `train_images/` 和 `test_images/` 已写入 `.gitignore`，不会被提交到 Git。
 
-## 6. 构造训练数据
+### 4.2 构造训练数据
 
 若要完整复现 pipeline，须从原始数据开始构造本项目使用的 style-v3 relaxed 数据。
 
@@ -216,7 +206,7 @@ data/zero_raw_v1/stage2_style_v3_relaxed_dino_root/
 
 `data/zero_raw_v1/` 是生成目录，已写入 `.gitignore`。
 
-## 7. 完整 Pipeline：网格搜索复现
+### 4.3 网格搜索
 
 数据构造完成后，按原仓库网格搜索流程重新训练 probe head：
 
@@ -266,7 +256,7 @@ cmp \
 
 如果没有输出，说明完整网格选出的 rank1 与线上提交文件完全一致。
 
-## 8. 可选：测试 DINOv2 下载
+## 5. 可选：测试 DINOv2 下载
 
 如果不使用固定 feature cache，而是重新提取 DINOv2 特征，可以先测试 PyTorch Hub：
 
