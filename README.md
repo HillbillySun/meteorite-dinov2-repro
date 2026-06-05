@@ -2,9 +2,9 @@
 
 本仓库用于复现 STA326 课程项目的最佳提交结果。
 
-Public Score: 0.79545
-线上提交记录: kaggle_online_results.csv
-模型: DINOv2-B with registers + MLP probe head
+- Public Score: 0.79545
+- 线上提交记录: kaggle_online_results.csv
+- 模型: DINOv2-B with registers + MLP probe head
 
 本仓库提供两条复现路径：
 
