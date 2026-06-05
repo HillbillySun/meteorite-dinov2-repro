@@ -2,51 +2,67 @@
 
 本仓库用于复现 STA326 课程项目的最佳提交结果。
 
-- Public Score: 0.79545
-- 线上提交记录: kaggle_online_results.csv
-- 模型: DINOv2-B with registers + MLP probe head
+```text
+Public Score: 0.79545
+线上提交记录: kaggle_online_results.csv
+模型: DINOv2-B/14 with registers + MLP probe head
+主要显卡: NVIDIA L20
+```
 
-本仓库提供两条复现路径：
+本仓库提供三种使用方式：
 
-- 快速验证：使用仓库提供的固定 DINOv2 feature cache，直接复现最佳提交。
+1. 快速验证：使用仓库内固定 DINOv2 feature cache，直接复现最佳 `topk_90.csv`。
+2. Hugging Face 直调：直接加载已上传的完整模型做单图推理，并生成 `topk_90.csv`。
+3. 完整 Pipeline：从课程原始图片开始构造数据、提特征、网格搜索并选择最佳提交。
 
-- 完整 Pipeline：从原始图片构造数据，按原仓库网格搜索流程重新训练，按 val topk_f1 选择 rank1。
 ## 1. 仓库结构
+
+当前 Git 仓库中主要包含：
 
 ```text
 artifacts/
-  features_cache_dinov2_b14_relaxed_mild.pt
+  features_cache_dinov2_b14_relaxed_mild.pt   # 固定 feature cache，用于快速复现
 
 configs/
-  best_dinov2_b14_relaxed.yaml
+  best_dinov2_b14_relaxed.yaml                # 最佳配置记录
 
 data/
   README.md
-  splits/hardval_ablation/val_mild_400g.csv
+  train_labels.csv                            # 官方标签表
+  sample_submission.csv                       # 官方提交模板
+  splits/hardval_ablation/val_mild_400g.csv   # 固定 validation split
 
 outputs/best_submission/
-  topk_90.csv
-  test_probabilities.csv
-
-kaggle_online_results.csv
+  topk_90.csv                                 # 最佳提交文件副本
+  test_probabilities.csv                      # 最佳模型测试概率副本
 
 scripts/
-  reproduce_best.sh
-  grid_search_original_like_topkf1.sh
+  reproduce_best.sh                           # 固定 cache 快速复现
+  predict_hf_top90.py                         # Hugging Face 直调生成 top90
+  build_zero_raw_dataset.sh                   # 从原始图构造训练数据
+  grid_search_original_like_topkf1.sh         # 完整网格搜索入口
   grid_search_dinov2_probe_head_gpu_parallel.py
   train_dinov2_probe.py
   build_stage2_rembg_datasets.py
   build_stage2_style_v3_dataset.py
 
+kaggle_online_results.csv                     # 线上公开榜对应提交文件
 requirements.txt
 setup_gpu_env.sh
 ```
 
-## 2. 硬件环境
+以下内容不会提交到 Git，需要用户自行准备或运行脚本生成：
 
-本结果在 NVIDIA L20 GPU 上完成和验证。完整网格搜索建议使用同等级或更高显存的 GPU；如果显存较小，可以降低 `PARALLEL_WORKERS` 或改为单进程运行。
+```text
+data/train_images/                            # 官方训练图片，自行放置
+data/test_images/                             # 官方测试图片，自行放置
+data/zero_raw_v1/                             # 完整 Pipeline 自动生成
+runs/                                         # 训练、网格搜索和复现输出
+hf_*/                                         # 本地 Hugging Face 打包目录
+.venv/                                        # 本地 Python 环境
+```
 
-## 3. 创建环境
+## 2. 环境配置
 
 推荐使用 Python 3.10 或更高版本。
 
@@ -63,9 +79,7 @@ pip install -r requirements.txt
 pip install -r requirements.txt
 ```
 
-## 4. 配置 GPU 运行库
-
-每次新开 shell 后运行：
+每次新开 shell 后建议运行：
 
 ```bash
 source .venv/bin/activate
@@ -79,13 +93,13 @@ torch cuda available: True
 onnxruntime providers: ['CUDAExecutionProvider', ...]
 ```
 
-如果出现下面错误，通常是没有运行 `source setup_gpu_env.sh`：
+如果出现下面错误，通常是没有运行 `source setup_gpu_env.sh`，或 CUDA/cuDNN 运行库没有被正确找到：
 
 ```text
 libcudnn.so.9: cannot open shared object file
 ```
 
-## 5. 快速验证：固定 cache 复现最佳提交
+## 3. 快速验证：固定 cache 复现最佳提交
 
 该路径不需要原始图片，也不需要先构建数据。本仓库包含固定的 DINOv2 feature cache：
 
@@ -93,7 +107,7 @@ libcudnn.so.9: cannot open shared object file
 artifacts/features_cache_dinov2_b14_relaxed_mild.pt
 ```
 
-如果只需要快速验证最终提交文件，可以直接运行：
+运行：
 
 ```bash
 bash scripts/reproduce_best.sh
@@ -113,11 +127,43 @@ cmp \
   kaggle_online_results.csv
 ```
 
-如果没有输出，说明复现结果与线上提交文件完全一致。`outputs/best_submission/topk_90.csv` 是仓库中保存的一份同样内容的复现输出副本。
+如果没有输出，说明复现结果与线上提交文件完全一致。
 
-## 6. 准备原始数据
+## 4. Hugging Face 直调模型验证
 
-请将课程提供的数据放到 `data/` 下：
+完整模型已上传到 Hugging Face，仓库地址：
+
+```text
+https://huggingface.co/Eki734/meteorite-dinov2-b14-direct
+```
+
+该模型包含完整 DINOv2-B/14-register backbone 和 MLP probe head 权重。
+
+如果希望直接生成 Hugging Face 模型对应的 `topk_90.csv`，运行：
+
+```bash
+python scripts/predict_hf_top90.py
+```
+
+默认输出：
+
+```text
+runs/hf_direct_top90/test_probabilities.csv
+runs/hf_direct_top90/topk_90.csv
+```
+
+脚本会自动与 `kaggle_online_results.csv` 比对。预期最后会看到：
+
+```text
+[hf_top90] diff_vs_reference=0
+[hf_top90] matches reference exactly
+```
+
+这说明生成的 `topk_90.csv` 与线上提交文件完全一致。
+
+## 5. 准备原始数据
+
+如需从零开始运行完整 Pipeline，请将课程提供的数据放到 `data/` 下：
 
 ```text
 data/
@@ -139,9 +185,11 @@ data/
 train_labels.csv 和 sample_submission.csv 中的 id 必须与图片文件名一致。
 ```
 
-## 7. 构造训练数据
+其中 `train_images/` 和 `test_images/` 已写入 `.gitignore`，不会被提交到 Git。
 
-若要完整复现pipeline，须从原始数据开始复现，需要先构造本项目使用的 style-v3 relaxed 数据。
+## 6. 构造训练数据
+
+若要完整复现 pipeline，须从原始数据开始构造本项目使用的 style-v3 relaxed 数据。
 
 运行：
 
@@ -152,19 +200,23 @@ OUT_TAG=zero_raw_v1 bash scripts/build_zero_raw_dataset.sh
 该脚本会执行：
 
 ```text
-原始 train_images -> rembg 抠图 -> style-v3 relaxed 数据
+原始 train_images -> rembg 抠图 -> style-v3 relaxed 训练数据
+原始 test_images  -> 直接复制到构造后的 test_images
 ```
 
 主要生成：
 
 ```text
 data/zero_raw_v1/stage2_style_v3_relaxed_dino_root/
+├── train_images/
+├── test_images/
+├── train_labels.csv
+└── sample_submission.csv
 ```
 
-该目录会作为后续完整网格搜索的数据根目录。
+`data/zero_raw_v1/` 是生成目录，已写入 `.gitignore`。
 
-
-## 8. 完整 Pipeline：网格搜索复现
+## 7. 完整 Pipeline：网格搜索复现
 
 数据构造完成后，按原仓库网格搜索流程重新训练 probe head：
 
@@ -214,42 +266,7 @@ cmp \
 
 如果没有输出，说明完整网格选出的 rank1 与线上提交文件完全一致。
 
-## 9. 可选：只重新构建预处理数据
-
-如果只希望从原始图片重新生成训练数据，可以先运行 rembg：
-
-```bash
-python scripts/build_stage2_rembg_datasets.py
-```
-
-然后生成 style-v3 relaxed 数据：
-
-```bash
-python scripts/build_stage2_style_v3_dataset.py \
-  --output-dir data/train_images_stage2_style_v3_relaxed \
-  --output-labels data/train_labels_stage2_style_v3_relaxed.csv \
-  --metadata-csv data/train_images_stage2_style_v3_relaxed_meta.csv \
-  --min-source-area 0.003 \
-  --max-source-area 0.90 \
-  --min-target-area 0.20 \
-  --max-target-area 0.96 \
-  --target-area-multiplier 1.08 \
-  --background-jitter-prob 0.35 \
-  --shadow-prob 0.25 \
-  --output-root data/stage2_style_v3_relaxed_dino_root
-```
-
-该步骤会生成：
-
-```text
-data/stage2_style_v3_relaxed_dino_root/
-├── train_images/
-├── test_images/
-├── train_labels.csv
-└── sample_submission.csv
-```
-
-## 10. 可选：手动测试 DINOv2 下载
+## 8. 可选：测试 DINOv2 下载
 
 如果不使用固定 feature cache，而是重新提取 DINOv2 特征，可以先测试 PyTorch Hub：
 
@@ -260,4 +277,3 @@ model = torch.hub.load("facebookresearch/dinov2", "dinov2_vitb14_reg")
 print("DINOv2-B with registers loaded")
 PY
 ```
-

@@ -16,3 +16,4 @@ data/*_images/
 data/*_stage2_*/
 data/*_stage2_*.csv
 data/zero_*/
+hf_*/
