@@ -12,6 +12,7 @@ Pillow==12.2.0
 tqdm==4.67.3
 transformers==5.10.1
 huggingface_hub==1.17.0
+modelscope==1.37.1
 timm==1.0.27
 rembg[gpu]==2.0.69
 onnxruntime-gpu==1.23.2

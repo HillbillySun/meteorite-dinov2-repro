@@ -4,7 +4,7 @@
 
 **Reproduction repository for the STA326 course project**
 
-[中文](README.md) · [Hugging Face Model](https://huggingface.co/Eki734/meteorite-dinov2-b14-direct)
+[中文](README.md) · [Hugging Face Model](https://huggingface.co/Eki734/meteorite-dinov2-b14-direct) · [ModelScope Model](https://modelscope.cn/models/QiSunSiu/meteorite-dinov2-b14-direct)
 
 </div>
 
@@ -28,7 +28,7 @@ This repository reproduces the meteorite image binary classification result for 
 
 | Option | Description | Command |
 | --- | --- | --- |
-| Quick verification | Generate top90 directly with the full Hugging Face model | `python scripts/predict_hf_top90.py ...` |
+| Quick verification | Load the full model from Hugging Face or ModelScope and generate top90 | `python scripts/predict_hf_top90.py ...` |
 | Fixed-cache reproduction | Reproduce the training output using the provided feature cache | `bash scripts/reproduce_best.sh` |
 | Full pipeline | Build the dataset from raw images and select the best model through grid search | `bash scripts/build_zero_raw_dataset.sh` + `bash scripts/grid_search_original_like_topkf1.sh` |
 
@@ -47,7 +47,7 @@ This repository reproduces the meteorite image binary classification result for 
 │   ├── grid_search_original_like_topkf1.sh
 │   │                                  # Original-style grid search selected by val topk_f1
 │   ├── reproduce_best.sh             # Fast reproduction with fixed feature cache
-│   ├── predict_hf_top90.py           # Generate top90 using the Hugging Face model
+│   ├── predict_hf_top90.py           # Support Hugging Face, ModelScope, and local models
 │   ├── train_best_known_hparams.sh   # Optional single-setting retraining
 │   └── train_best_known_hparams_checkpoint.py
 ├── outputs/
@@ -55,6 +55,7 @@ This repository reproduces the meteorite image binary classification result for 
 ├── artifacts/                        # Fixed feature cache
 ├── docs/                             # Experiment notes and documentation
 ├── requirements.txt
+├── setup_gpu_env.sh                  # Configure pip CUDA/cuDNN library paths
 ├── README.md
 └── README_en.md
 ```
@@ -74,7 +75,7 @@ Note: `data/test_images` should contain the original test images. No additional 
 
 ## Environment Setup
 
-Create a Python 3.10 virtual environment:
+Create a Python 3.10 virtual environment and install the dependencies:
 
 ```bash
 python -m venv .venv
@@ -83,24 +84,30 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-Check CUDA availability:
+After installation, load the GPU runtime environment:
 
 ```bash
-python - <<'PY'
-import torch
-print(torch.__version__)
-print('cuda available:', torch.cuda.is_available())
-if torch.cuda.is_available():
-    print(torch.cuda.get_device_name(0))
-PY
+source setup_gpu_env.sh
 ```
 
-## Option 1: Hugging Face Quick Verification
+> Use `source`, not `bash setup_gpu_env.sh`. The script must keep the pip-installed CUDA/cuDNN library paths in the current shell for `onnxruntime-gpu` and the rembg dataset-building step. Run it again after activating `.venv` in each new terminal when rebuilding the dataset.
 
-This is the simplest verification path. The script loads the packaged model from Hugging Face and generates the top90 submission directly from `data/test_images`.
+The script checks both PyTorch CUDA and the ONNX Runtime providers. A working GPU setup should print output similar to:
+
+```text
+torch cuda available: True
+onnxruntime providers: ['CUDAExecutionProvider', ...]
+```
+
+## Option 1: Hugging Face / ModelScope Quick Verification
+
+The same inference script supports Hugging Face, ModelScope, and local model directories. After resolution, all three sources use the same Transformers inference path.
+
+### Hugging Face
 
 ```bash
 python scripts/predict_hf_top90.py \
+  --model-source huggingface \
   --model-id Eki734/meteorite-dinov2-b14-direct \
   --test-dir data/test_images \
   --output-csv runs/hf_direct_top90/topk_90.csv \
@@ -109,18 +116,35 @@ python scripts/predict_hf_top90.py \
   --top-k 90
 ```
 
-Output files:
+### ModelScope
 
-```text
-runs/hf_direct_top90/test_probabilities.csv
-runs/hf_direct_top90/topk_90.csv
+The same complete model can also be loaded directly from ModelScope:
+
+```bash
+python scripts/predict_hf_top90.py \
+  --model-source modelscope \
+  --model-id QiSunSiu/meteorite-dinov2-b14-direct \
+  --test-dir data/test_images \
+  --output-csv runs/modelscope_direct_top90/topk_90.csv \
+  --prob-csv runs/modelscope_direct_top90/test_probabilities.csv \
+  --reference-csv kaggle_online_results.csv \
+  --top-k 90
 ```
 
-If the local data matches the online submission record, the terminal should show:
+Main outputs:
 
 ```text
-[hf_top90] diff_vs_reference=0
-[hf_top90] matches reference exactly
+runs/hf_direct_top90/topk_90.csv
+runs/hf_direct_top90/test_probabilities.csv
+runs/modelscope_direct_top90/topk_90.csv
+runs/modelscope_direct_top90/test_probabilities.csv
+```
+
+An exact match against the online submission record produces:
+
+```text
+[top90] diff_vs_reference=0
+[top90] matches reference exactly
 ```
 
 ## Option 2: Fast Reproduction with Fixed Feature Cache
@@ -170,37 +194,16 @@ runs/grid_original_like_topkf1_zero_raw_v1/grid_best_result/topk_90.csv
 
 `grid_best_result` is the automatically collected rank1 result directory and contains the final submission file.
 
-After the grid finishes, compare the automatically selected rank1 submission against the online record sample by sample:
+After the grid finishes, compare the selected rank1 submission directly against the online record:
 
 ```bash
-python - <<'PY'
-import csv
-from pathlib import Path
-
-pred = Path("runs/grid_original_like_topkf1_zero_raw_v1/grid_best_result/topk_90.csv")
-ref = Path("kaggle_online_results.csv")
-
-def read_labels(path):
-    with path.open("r", encoding="utf-8-sig", newline="") as f:
-        rows = list(csv.DictReader(f))
-    label_col = next(c for c in rows[0] if c != "id")
-    return {row["id"]: str(row[label_col]) for row in rows}
-
-pred_labels = read_labels(pred)
-ref_labels = read_labels(ref)
-all_ids = sorted(set(pred_labels) | set(ref_labels))
-diff = [(i, pred_labels.get(i), ref_labels.get(i))
-        for i in all_ids if pred_labels.get(i) != ref_labels.get(i)]
-
-print("prediction:", pred)
-print("reference:", ref)
-print("diff_count:", len(diff))
-print("diff_preview:", diff[:20])
-raise SystemExit(1 if diff else 0)
-PY
+cmp \
+  runs/grid_original_like_topkf1_zero_raw_v1/grid_best_result/topk_90.csv \
+  kaggle_online_results.csv \
+  && echo "OK: grid best result matches Kaggle online result"
 ```
 
-`diff_count: 0` means that the grid rank1 top90 exactly matches `kaggle_online_results.csv`.
+An `OK` message means that the automatically selected rank1 top90 exactly matches `kaggle_online_results.csv`.
 
 ## Outputs and Comparison
 
