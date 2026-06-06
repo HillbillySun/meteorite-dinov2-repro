@@ -32,32 +32,42 @@ This repository reproduces the meteorite image binary classification result for 
 | Fixed-cache reproduction | Reproduce the training output using the provided feature cache | `bash scripts/reproduce_best.sh` |
 | Full pipeline | Build the dataset from raw images and select the best model through grid search | `bash scripts/build_zero_raw_dataset.sh` + `bash scripts/grid_search_original_like_topkf1.sh` |
 
-## Repository Layout
+## Core Repository Layout
 
 ```text
 .
+├── artifacts/
+│   └── features_cache_dinov2_b14_relaxed_mild.pt
+│                                      # Fixed feature cache for fast reproduction
+├── configs/
+│   └── best_dinov2_b14_relaxed.yaml   # Experiment configuration record
 ├── data/
-│   ├── train_images/                 # Place original training images here
-│   ├── test_images/                  # Place original test images here
-│   ├── train_labels.csv              # Training labels
-│   ├── sample_submission.csv         # Submission template
-│   └── splits/                       # Fixed validation splits
+│   ├── README.md                      # Data placement instructions
+│   ├── train_images/                  # Place original training images here
+│   ├── test_images/                   # Place original test images here
+│   ├── train_labels.csv               # Training labels
+│   ├── sample_submission.csv          # Submission template
+│   └── splits/hardval_ablation/
+│       └── val_mild_400g.csv          # Fixed validation split
+├── outputs/best_submission/
+│   ├── test_probabilities.csv         # Best-model test probabilities
+│   └── topk_90.csv                    # Best top90 submission
 ├── scripts/
-│   ├── build_zero_raw_dataset.sh     # Build the training dataset from raw images
+│   ├── build_stage2_rembg_datasets.py # rembg training-data preprocessing
+│   ├── build_stage2_style_v3_dataset.py
+│   ├── build_zero_raw_dataset.sh      # Build the full dataset from raw images
+│   ├── grid_search_dinov2_probe_head_gpu_parallel.py
 │   ├── grid_search_original_like_topkf1.sh
-│   │                                  # Original-style grid search selected by val topk_f1
-│   ├── reproduce_best.sh             # Fast reproduction with fixed feature cache
-│   ├── predict_hf_top90.py           # Support Hugging Face, ModelScope, and local models
-│   ├── train_best_known_hparams.sh   # Optional single-setting retraining
+│   │                                  # Grid search selected by validation topk_f1
+│   ├── predict_hf_top90.py            # HF, ModelScope, and local inference
+│   ├── reproduce_best.sh              # Fast reproduction with the fixed cache
+│   ├── train_dinov2_probe.py          # DINOv2 frozen-probe training
 │   └── train_best_known_hparams_checkpoint.py
-├── outputs/
-│   └── best_submission/              # Best submission and probability files
-├── artifacts/                        # Fixed feature cache
-├── docs/                             # Experiment notes and documentation
-├── requirements.txt
-├── setup_gpu_env.sh                  # Configure pip CUDA/cuDNN library paths
-├── README.md
-└── README_en.md
+├── kaggle_online_results.csv          # Online submission record for comparison
+├── requirements.txt                   # Python dependencies
+├── setup_gpu_env.sh                   # Configure pip CUDA/cuDNN library paths
+├── README.md                          # Chinese documentation
+└── README_en.md                       # English documentation
 ```
 
 ## Data Preparation

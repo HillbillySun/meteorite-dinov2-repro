@@ -32,32 +32,42 @@
 | 固定 cache 复现 | 使用仓库内固定 feature cache 快速复现训练输出 | `bash scripts/reproduce_best.sh` |
 | 完整 pipeline | 从原始数据构建数据集，并通过网格搜索自动选择最佳模型 | `bash scripts/build_zero_raw_dataset.sh` + `bash scripts/grid_search_original_like_topkf1.sh` |
 
-## 仓库结构
+## 核心仓库结构
 
 ```text
 .
+├── artifacts/
+│   └── features_cache_dinov2_b14_relaxed_mild.pt
+│                                      # 固定特征 cache，用于快速复现
+├── configs/
+│   └── best_dinov2_b14_relaxed.yaml   # 实验配置记录
 ├── data/
-│   ├── train_images/                 # 原始训练图片，请自行放置
-│   ├── test_images/                  # 原始测试图片，请自行放置
-│   ├── train_labels.csv              # 训练标签
-│   ├── sample_submission.csv         # 提交模板
-│   └── splits/                       # 固定验证集划分
+│   ├── README.md                      # 数据放置说明
+│   ├── train_images/                  # 原始训练图片，需自行放置
+│   ├── test_images/                   # 原始测试图片，需自行放置
+│   ├── train_labels.csv               # 训练标签
+│   ├── sample_submission.csv          # 提交模板
+│   └── splits/hardval_ablation/
+│       └── val_mild_400g.csv          # 固定验证集划分
+├── outputs/best_submission/
+│   ├── test_probabilities.csv         # 最佳模型测试集概率
+│   └── topk_90.csv                    # 最佳 top90 提交
 ├── scripts/
-│   ├── build_zero_raw_dataset.sh     # 从原始数据构建训练用数据集
+│   ├── build_stage2_rembg_datasets.py # rembg 训练集预处理
+│   ├── build_stage2_style_v3_dataset.py
+│   ├── build_zero_raw_dataset.sh      # 从原始数据构建完整训练数据
+│   ├── grid_search_dinov2_probe_head_gpu_parallel.py
 │   ├── grid_search_original_like_topkf1.sh
-│   │                                  # 原始风格网格搜索，按 val topk_f1 选择最佳模型
-│   ├── reproduce_best.sh             # 使用固定 feature cache 快速复现
-│   ├── predict_hf_top90.py           # 兼容 Hugging Face、ModelScope 和本地模型
-│   ├── train_best_known_hparams.sh   # 可选：单组超参数复训
+│   │                                  # 网格搜索并按 val topk_f1 选择 rank1
+│   ├── predict_hf_top90.py            # HF、ModelScope 和本地模型推理
+│   ├── reproduce_best.sh              # 使用固定 cache 快速复现
+│   ├── train_dinov2_probe.py          # DINOv2 frozen probe 训练
 │   └── train_best_known_hparams_checkpoint.py
-├── outputs/
-│   └── best_submission/              # 最佳提交与概率文件
-├── artifacts/                        # 固定 feature cache
-├── docs/                             # 实验记录与说明
-├── requirements.txt
-├── setup_gpu_env.sh                  # 配置 pip CUDA/cuDNN 动态库路径
-├── README.md
-└── README_en.md
+├── kaggle_online_results.csv          # 线上提交记录，用于结果比对
+├── requirements.txt                   # Python 依赖
+├── setup_gpu_env.sh                   # 配置 pip CUDA/cuDNN 动态库路径
+├── README.md                          # 中文说明
+└── README_en.md                       # English documentation
 ```
 
 ## 数据准备
