@@ -101,11 +101,12 @@ PY
 
 ```bash
 python scripts/predict_hf_top90.py \
-  --model-repo Eki734/meteorite-dinov2-b14-direct \
+  --model-id Eki734/meteorite-dinov2-b14-direct \
   --test-dir data/test_images \
-  --sample-submission data/sample_submission.csv \
-  --output-dir runs/hf_direct_top90 \
-  --reference-csv kaggle_online_results.csv
+  --output-csv runs/hf_direct_top90/topk_90.csv \
+  --prob-csv runs/hf_direct_top90/test_probabilities.csv \
+  --reference-csv kaggle_online_results.csv \
+  --top-k 90
 ```
 
 输出文件：
@@ -130,11 +131,18 @@ runs/hf_direct_top90/topk_90.csv
 bash scripts/reproduce_best.sh
 ```
 
-主要输出：
+该脚本会在训练结束后自动与 `kaggle_online_results.csv` 比较，并打印差异数量。主要输出为：
 
 ```text
-runs/reproduce_dinov2_b14_best/
-outputs/best_submission/topk_90.csv
+runs/reproduce_dinov2_b14_best_exact/runs/
+└── s3407_pw1p00_mx0p03_do0p45_ls0p02_lr0p0005_wd0p01/
+    └── topk_90.csv
+```
+
+若完全一致，终端会显示：
+
+```text
+[reproduce_best] OK: ... matches kaggle_online_results.csv
 ```
 
 ## 路径三：完整 Pipeline 复现
@@ -161,6 +169,38 @@ runs/grid_original_like_topkf1_zero_raw_v1/grid_best_result/topk_90.csv
 ```
 
 其中 `grid_best_result` 是脚本自动整理出的 rank1 结果目录，方便直接检查最终提交文件。
+
+网格完成后，运行下面的命令，将自动选出的 rank1 提交与线上记录逐样本比较：
+
+```bash
+python - <<'PY'
+import csv
+from pathlib import Path
+
+pred = Path("runs/grid_original_like_topkf1_zero_raw_v1/grid_best_result/topk_90.csv")
+ref = Path("kaggle_online_results.csv")
+
+def read_labels(path):
+    with path.open("r", encoding="utf-8-sig", newline="") as f:
+        rows = list(csv.DictReader(f))
+    label_col = next(c for c in rows[0] if c != "id")
+    return {row["id"]: str(row[label_col]) for row in rows}
+
+pred_labels = read_labels(pred)
+ref_labels = read_labels(ref)
+all_ids = sorted(set(pred_labels) | set(ref_labels))
+diff = [(i, pred_labels.get(i), ref_labels.get(i))
+        for i in all_ids if pred_labels.get(i) != ref_labels.get(i)]
+
+print("prediction:", pred)
+print("reference:", ref)
+print("diff_count:", len(diff))
+print("diff_preview:", diff[:20])
+raise SystemExit(1 if diff else 0)
+PY
+```
+
+当输出 `diff_count: 0` 时，说明该网格 rank1 的 top90 与 `kaggle_online_results.csv` 完全一致。
 
 ## 输出与比对
 

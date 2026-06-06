@@ -101,11 +101,12 @@ This is the simplest verification path. The script loads the packaged model from
 
 ```bash
 python scripts/predict_hf_top90.py \
-  --model-repo Eki734/meteorite-dinov2-b14-direct \
+  --model-id Eki734/meteorite-dinov2-b14-direct \
   --test-dir data/test_images \
-  --sample-submission data/sample_submission.csv \
-  --output-dir runs/hf_direct_top90 \
-  --reference-csv kaggle_online_results.csv
+  --output-csv runs/hf_direct_top90/topk_90.csv \
+  --prob-csv runs/hf_direct_top90/test_probabilities.csv \
+  --reference-csv kaggle_online_results.csv \
+  --top-k 90
 ```
 
 Output files:
@@ -130,11 +131,18 @@ To reproduce the final training output without extracting DINOv2 features again,
 bash scripts/reproduce_best.sh
 ```
 
-Main outputs:
+The script automatically compares its output against `kaggle_online_results.csv` and prints the number of differences. Its main output is:
 
 ```text
-runs/reproduce_dinov2_b14_best/
-outputs/best_submission/topk_90.csv
+runs/reproduce_dinov2_b14_best_exact/runs/
+└── s3407_pw1p00_mx0p03_do0p45_ls0p02_lr0p0005_wd0p01/
+    └── topk_90.csv
+```
+
+An exact match produces:
+
+```text
+[reproduce_best] OK: ... matches kaggle_online_results.csv
 ```
 
 ## Option 3: Full Pipeline Reproduction
@@ -161,6 +169,38 @@ runs/grid_original_like_topkf1_zero_raw_v1/grid_best_result/topk_90.csv
 ```
 
 `grid_best_result` is the automatically collected rank1 result directory and contains the final submission file.
+
+After the grid finishes, compare the automatically selected rank1 submission against the online record sample by sample:
+
+```bash
+python - <<'PY'
+import csv
+from pathlib import Path
+
+pred = Path("runs/grid_original_like_topkf1_zero_raw_v1/grid_best_result/topk_90.csv")
+ref = Path("kaggle_online_results.csv")
+
+def read_labels(path):
+    with path.open("r", encoding="utf-8-sig", newline="") as f:
+        rows = list(csv.DictReader(f))
+    label_col = next(c for c in rows[0] if c != "id")
+    return {row["id"]: str(row[label_col]) for row in rows}
+
+pred_labels = read_labels(pred)
+ref_labels = read_labels(ref)
+all_ids = sorted(set(pred_labels) | set(ref_labels))
+diff = [(i, pred_labels.get(i), ref_labels.get(i))
+        for i in all_ids if pred_labels.get(i) != ref_labels.get(i)]
+
+print("prediction:", pred)
+print("reference:", ref)
+print("diff_count:", len(diff))
+print("diff_preview:", diff[:20])
+raise SystemExit(1 if diff else 0)
+PY
+```
+
+`diff_count: 0` means that the grid rank1 top90 exactly matches `kaggle_online_results.csv`.
 
 ## Outputs and Comparison
 
