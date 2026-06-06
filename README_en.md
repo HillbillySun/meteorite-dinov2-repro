@@ -49,9 +49,6 @@ This repository reproduces the meteorite image binary classification result for 
 │   ├── sample_submission.csv          # Submission template
 │   └── splits/hardval_ablation/
 │       └── val_mild_400g.csv          # Fixed validation split
-├── outputs/best_submission/
-│   ├── test_probabilities.csv         # Best-model test probabilities
-│   └── topk_90.csv                    # Best top90 submission
 ├── scripts/
 │   ├── build_stage2_rembg_datasets.py # rembg training-data preprocessing
 │   ├── build_stage2_style_v3_dataset.py

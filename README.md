@@ -49,9 +49,6 @@
 │   ├── sample_submission.csv          # 提交模板
 │   └── splits/hardval_ablation/
 │       └── val_mild_400g.csv          # 固定验证集划分
-├── outputs/best_submission/
-│   ├── test_probabilities.csv         # 最佳模型测试集概率
-│   └── topk_90.csv                    # 最佳 top90 提交
 ├── scripts/
 │   ├── build_stage2_rembg_datasets.py # rembg 训练集预处理
 │   ├── build_stage2_style_v3_dataset.py
