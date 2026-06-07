@@ -18,7 +18,6 @@ This repository reproduces the meteorite image binary classification result for 
 | --- | --- |
 | Task | Binary meteorite image classification |
 | Main model | DINOv2-B/14 with registers + MLP probe head |
-| Best submission | `outputs/best_submission/topk_90.csv` |
 | Online result record | `kaggle_online_results.csv` |
 | Public Score | `0.79545` |
 | Recommended GPU | NVIDIA L20 or better |

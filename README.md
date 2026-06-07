@@ -18,7 +18,6 @@
 | --- | --- |
 | 任务 | 陨石图像二分类 |
 | 主模型 | DINOv2-B/14 with registers + MLP probe head |
-| 最佳提交 | `outputs/best_submission/topk_90.csv` |
 | 线上结果记录 | `kaggle_online_results.csv` |
 | Public Score | `0.79545` |
 | 推荐显卡 | NVIDIA L20 或更高 |
