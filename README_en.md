@@ -4,7 +4,7 @@
 
 **Reproduction repository for the STA326 course project**
 
-[中文](README.md) · [Hugging Face Model](https://huggingface.co/Eki734/meteorite-dinov2-b14-direct) · [ModelScope Model](https://modelscope.cn/models/QiSunSiu/meteorite-dinov2-b14-direct)
+[中文](README.md) · [Hugging Face Model](https://huggingface.co/Eki734/meteorite-dinov2-b14-direct) · [ModelScope Model](https://modelscope.cn/models/QiSunSiu/meteorite-dinov2-b14-direct) · [Report](https://ekisunqi.me/static/assets/docs/meteorite-dinov2-final-report.pdf)
 
 </div>
 
