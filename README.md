@@ -4,7 +4,7 @@
 
 **STA326 课程项目复现仓库**
 
-[English](README_en.md) · [Hugging Face Model](https://huggingface.co/Eki734/meteorite-dinov2-b14-direct) · [ModelScope Model](https://modelscope.cn/models/QiSunSiu/meteorite-dinov2-b14-direct)
+[English](README_en.md) · [Hugging Face Model](https://huggingface.co/Eki734/meteorite-dinov2-b14-direct) · [ModelScope Model](https://modelscope.cn/models/QiSunSiu/meteorite-dinov2-b14-direct) · [Report](https://ekisunqi.me/static/assets/docs/meteorite-dinov2-final-report.pdf)
 
 </div>
 
